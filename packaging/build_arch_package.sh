@@ -21,6 +21,19 @@ sed "s/@VERSION@/$VERSION/g" "$ROOT/packaging/arch/PKGBUILD.ci" >"$WORK/PKGBUILD
 
 useradd --create-home builder
 chown -R builder:builder "$WORK"
+mapfile -t PACOTES < <(
+  runuser -u builder -- bash -lc "cd '$WORK' && makepkg --packagelist"
+)
 runuser -u builder -- bash -lc "cd '$WORK' && makepkg --noconfirm --cleanbuild --nodeps"
-cp "$WORK/"*.pkg.tar.zst "$OUT/"
+if (( ${#PACOTES[@]} == 0 )); then
+  echo "makepkg não informou nenhum artefato" >&2
+  exit 1
+fi
+for pacote in "${PACOTES[@]}"; do
+  if [[ ! -f "$pacote" ]]; then
+    echo "Artefato esperado não foi gerado: $pacote" >&2
+    exit 1
+  fi
+  cp "$pacote" "$OUT/"
+done
 echo "Pacote Arch Linux gerado em: $OUT"

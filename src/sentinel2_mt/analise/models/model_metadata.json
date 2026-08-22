@@ -1,0 +1,9 @@
+{
+  "name": "Sentinel MT Agriculture Detector",
+  "version": "0.1.0",
+  "sha256": "",
+  "framework": "Ultralytics YOLO",
+  "task": "detection",
+  "input": "RGB B04/B03/B02 uint8 gerado pelo pipeline de patches",
+  "input_size": 640
+}

@@ -24,6 +24,8 @@ núcleo de serviços para uso avançado e automação.
 - GUI desktop em PySide6 com mapa, perfis locais e logs em tempo real;
 - TUI em Textual para uso completo pelo terminal;
 - CLI para automação, scripts e servidores;
+- análise agrícola local por detecção em patches RGB, com estatísticas, overlays,
+  relatório PDF e histórico SQLite;
 - sincronização direta com Google Drive, sem `rclone`;
 - divisão dos arquivos em lotes configuráveis;
 - preservação da hierarquia local e atualização de arquivos já existentes;
@@ -76,6 +78,8 @@ Pela GUI é possível:
 - apontar diretamente para o JSON OAuth do Google;
 - configurar lotes e sincronizar com o Drive;
 - acompanhar a saída, cancelar operações e visualizar previews;
+- executar **Analisar região com IA**, consultar estatísticas e overlays e abrir
+  relatórios do histórico local;
 - salvar perfis locais por região sem armazenar credenciais.
 
 Para apenas preparar o ambiente gráfico:
@@ -102,11 +106,10 @@ O executável sem argumentos e o atalho do sistema abrem sempre a GUI.
 python iniciar_tui.py
 ```
 
-A TUI permite catalogar, baixar, gerar o dataset local, sincronizar, acompanhar
-logs e cancelar a operação atual. Use `Ctrl+Q` para sair e `Ctrl+L` para limpar
-o log.
-Em uma instalação empacotada, use `sentinel2-mt --tui`.
-Em uma instalação empacotada, use `sentinel2-mt --tui`.
+A TUI permite catalogar, baixar, gerar o dataset local, executar a análise,
+sincronizar, acompanhar logs e cancelar a operação atual. Use `Ctrl+Q` para sair
+e `Ctrl+L` para limpar o log. Em uma instalação empacotada, use
+`sentinel2-mt --tui`.
 
 ### Linha de comando
 
@@ -170,6 +173,21 @@ Baixar até cinco cenas em um período específico:
   --max-itens 5
 ```
 
+Baixar/processar as cenas, gerar patches e executar a análise agrícola local:
+
+```bash
+.venv/bin/python src/baixar_inpe_mt.py \
+  --analisar --inicio 2025-09-01 --fim 2026-04-30 \
+  --patch-size 512 --patch-stride 512 --max-itens 5
+```
+
+`--analisar` usa os mesmos parâmetros de período, limite de cenas e patches da
+coleta. Ele não pode ser combinado com `--sincronizar`. Antes de executar,
+forneça um peso Ultralytics YOLO compatível exatamente em
+`src/sentinel2_mt/analise/models/agricultura.pt` na árvore de desenvolvimento.
+Esse arquivo `.pt` não está incluído no repositório; por isso, a inferência real
+não foi validada neste estado do código.
+
 Exibir todas as opções:
 
 ```bash
@@ -189,7 +207,29 @@ O arquivo padrão é `config/config.yaml`. Ele concentra:
 - tamanho, stride, nuvem, dados válidos mínimos e limite de patches por cena;
 - diretórios e catálogos separados para cenas e dataset;
 - diretórios, timeout e tamanho de chunk;
+- modelo, limiares, tamanho de inferência, saídas e histórico da análise;
 - credenciais, destino, extensões e lotes da sincronização.
+
+A seção de análise e seus defaults no ambiente de desenvolvimento são:
+
+```yaml
+analise:
+  modelo: analise/models/agricultura.pt
+  modelo_sha256: ''
+  confianca_minima: 0.25
+  iou_maximo: 0.45
+  tamanho_inferencia_px: 640
+  pasta: data/analises
+  historico: data/historico-analises.sqlite3
+  gerar_relatorio: true
+  max_imagens: 1000
+```
+
+`max_imagens: 1000` limita o uso de memória e disco; zero remove o limite e deve
+ser usado com cautela em catálogos grandes. O SHA-256 aprovado deve ser gravado
+no `model_metadata.json`; a cópia opcional no YAML precisa coincidir. Veja
+[docs/modelo-ia.md](docs/modelo-ia.md) para instalação, metadata, CPU/GPU,
+substituição do modelo e limitações.
 
 As variáveis abaixo podem sobrescrever valores sensíveis sem alterar o YAML:
 
@@ -248,6 +288,13 @@ data/dataset/
 catalogo/
 ├── catalogo_imagens.csv
 └── patches.csv
+
+data/analises/analise-HASH/
+├── PATCH_ID-deteccoes.png
+├── resultado.json
+└── relatorio.pdf              # se analise.gerar_relatorio=true
+
+data/historico-analises.sqlite3
 ```
 
 Os GeoTIFFs em `data/sentinel2` são a fonte científica e nunca são
@@ -324,7 +371,17 @@ A sincronização:
 
 ## Arquitetura
 
-O projeto separa regras de negócio, adaptadores e interfaces:
+O projeto é um monólito modular: GUI, TUI e CLI são distribuídas juntas, mas as
+regras de negócio, processamento raster, análise e integrações ficam separadas
+em módulos substituíveis. A arquitetura e o fluxo completo estão em
+[docs/arquitetura-aplicacao.md](docs/arquitetura-aplicacao.md).
+
+No fluxo gráfico de análise, a GUI inicia a CLI por `QProcess`; a CLI chama
+`ServicoSentinel2`, gera patches RGB e multibanda, executa `DetectorAgricola`,
+agrega estatísticas, grava overlays e JSON, gera o PDF opcional e registra o
+histórico local. A TUI também delega a operação `--analisar` à mesma CLI.
+
+Componentes principais:
 
 | Componente | Responsabilidade |
 | --- | --- |
@@ -334,6 +391,8 @@ O projeto separa regras de negócio, adaptadores e interfaces:
 | `ClienteDownloadHTTP` | Transferência HTTP com timeout e progresso |
 | `ProcessadorImagem` | Leitura de bandas, filtros e geração do preview |
 | `GeradorDataset` | Janelas, alinhamento, qualidade e produtos dos patches |
+| `ServicoAnaliseAgricola` | Orquestra patches, detector, estatísticas, overlays, PDF e histórico |
+| `DetectorAgricola` | Adaptador local para inferência Ultralytics YOLO em CPU ou CUDA |
 | `ResolvedorAssets` | Normalização de nomes de assets entre coleções STAC |
 | `RepositorioCatalogoCSV` | Persistência reproduzível do catálogo |
 | `RepositorioCatalogoPatchesCSV` | Catálogo incremental e rastreável dos patches |

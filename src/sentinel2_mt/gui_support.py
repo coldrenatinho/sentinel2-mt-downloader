@@ -43,7 +43,7 @@ def montar_argumentos_operacao(
     patch_stride: int | None = None,
 ) -> list[str]:
     """Traduz o formulário da GUI para argumentos da CLI oficial."""
-    if operacao not in {"catalogar", "baixar", "dataset", "sincronizar"}:
+    if operacao not in {"catalogar", "baixar", "dataset", "analisar", "sincronizar"}:
         raise ValueError(f"Operação desconhecida: {operacao}")
 
     argumentos = ["--config", str(Path(config).expanduser())]
@@ -51,6 +51,8 @@ def montar_argumentos_operacao(
         argumentos.append("--baixar")
     elif operacao == "dataset":
         argumentos.append("--gerar-dataset")
+    elif operacao == "analisar":
+        argumentos.append("--analisar")
     elif operacao == "sincronizar":
         argumentos.append("--sincronizar")
 
@@ -63,11 +65,11 @@ def montar_argumentos_operacao(
             if max_itens < 0:
                 raise ValueError("A quantidade máxima de cenas não pode ser negativa.")
             argumentos.extend(["--max-itens", str(max_itens)])
-        if operacao == "dataset" and patch_size is not None:
+        if operacao in {"dataset", "analisar"} and patch_size is not None:
             if patch_size not in {256, 512}:
                 raise ValueError("O tamanho do patch deve ser 256 ou 512 pixels.")
             argumentos.extend(["--patch-size", str(patch_size)])
-        if operacao == "dataset" and patch_stride is not None:
+        if operacao in {"dataset", "analisar"} and patch_stride is not None:
             if patch_stride <= 0:
                 raise ValueError("O stride do patch deve ser positivo.")
             argumentos.extend(["--patch-stride", str(patch_stride)])

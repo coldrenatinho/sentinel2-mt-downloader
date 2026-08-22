@@ -12,6 +12,8 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
 from sentinel2_mt.config_builder import GeradorConfiguracao, gerar_config, salvar_config as persistir_config
+from sentinel2_mt.configuracao import ConfiguracaoProjeto
+from sentinel2_mt.analise.historico import RepositorioHistoricoAnalises
 from sentinel2_mt.gui_support import (
     LocalConfigStore,
     montar_argumentos_operacao,
@@ -461,6 +463,8 @@ class MainWindow(QtWidgets.QMainWindow):
         ("Área e período", "Escolha a região no mapa"),
         ("Dados e qualidade", "Ajuste STAC, bandas e filtros"),
         ("Google Drive", "Configure OAuth e sincronização"),
+        ("Análise da região", "Consulte detecções, imagens e estatísticas"),
+        ("Histórico", "Acesse análises e relatórios locais"),
         ("Configuração", "Revise YAML e perfis locais"),
     )
 
@@ -478,6 +482,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.processo.readyReadStandardOutput.connect(self._ler_saida)
         self.processo.finished.connect(self._processo_finalizado)
         self.processo.errorOccurred.connect(self._erro_processo)
+        self._saida_pendente = ""
+        self._ultimo_resultado: dict[str, Any] | None = None
+        self._operacao_em_execucao = ""
+        self._resultado_pendente: Path | None = None
 
         self._criar_campos()
         self._montar_janela()
@@ -525,6 +533,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dataset_rgb_minimo = self._inteiro(-10000, 10000, 0)
         self.dataset_rgb_maximo = self._inteiro(-10000, 30000, 2000)
 
+        self.modelo_ia = QtWidgets.QLineEdit("analise/models/agricultura.pt")
+        self.modelo_sha256 = QtWidgets.QLineEdit()
+        self.modelo_sha256.setPlaceholderText("Opcional: SHA-256 do modelo aprovado")
+        self.confianca_minima = self._inteiro(0, 100, 25, "%")
+        self.iou_maximo = self._inteiro(0, 100, 45, "%")
+        self.tamanho_inferencia_px = self._inteiro(128, 2048, 640, " px")
+        self.pasta_analises = QtWidgets.QLineEdit("data/analises")
+        self.historico_analises = QtWidgets.QLineEdit("data/historico-analises.sqlite3")
+        self.gerar_relatorio = QtWidgets.QCheckBox("Gerar relatório PDF automaticamente")
+        self.gerar_relatorio.setChecked(True)
+        self.max_imagens_analise = self._inteiro(0, 10000, 1000)
+        self.max_imagens_analise.setSpecialValueText("Todas")
+
         self.pasta_download = QtWidgets.QLineEdit("data/sentinel2")
         self.catalogo = QtWidgets.QLineEdit("catalogo/catalogo_imagens.csv")
         self.output_path = QtWidgets.QLineEdit(str(DEFAULT_CONFIG))
@@ -544,6 +565,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.operacao.addItem("Catalogar sem baixar", "catalogar")
         self.operacao.addItem("Baixar imagens aprovadas", "baixar")
         self.operacao.addItem("Gerar dataset das cenas locais", "dataset")
+        self.operacao.addItem("Analisar região com IA", "analisar")
         self.operacao.addItem("Sincronizar com Google Drive", "sincronizar")
         self.max_execucao = self._inteiro(0, 1000, 5)
         self.max_execucao.setSpecialValueText("Todas")
@@ -562,6 +584,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.imagem_preview.setObjectName("previewImage")
         self.imagem_preview.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.imagem_preview.setMinimumHeight(210)
+        self.analise_info = QtWidgets.QLabel("Execute 'Analisar região com IA' para ver os resultados.")
+        self.analise_info.setWordWrap(True)
+        self.analise_tabela = QtWidgets.QTableWidget(0, 5)
+        self.analise_tabela.setHorizontalHeaderLabels(
+            ["Classe", "Detecções", "Confiança média", "Mínima", "Máxima"]
+        )
+        self.analise_tabela.horizontalHeader().setStretchLastSection(True)
+        self.analise_original = QtWidgets.QLabel("Imagem RGB original")
+        self.analise_anotada = QtWidgets.QLabel("Imagem com detecções")
+        for imagem in (self.analise_original, self.analise_anotada):
+            imagem.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            imagem.setMinimumHeight(240)
+        self.historico_tabela = QtWidgets.QTableWidget(0, 5)
+        self.historico_tabela.setHorizontalHeaderLabels(
+            ["Data", "Região", "Período", "Detecções", "Relatório"]
+        )
+        self.historico_tabela.horizontalHeader().setStretchLastSection(True)
 
     @staticmethod
     def _inteiro(minimo: int, maximo: int, valor: int, sufixo: str = "") -> ControleNumerico:
@@ -591,6 +630,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack.addWidget(self._pagina_area())
         self.stack.addWidget(self._pagina_dados())
         self.stack.addWidget(self._pagina_drive())
+        self.stack.addWidget(self._pagina_analise())
+        self.stack.addWidget(self._pagina_historico())
         self.stack.addWidget(self._pagina_config())
         layout_area.addWidget(self.stack, 1)
         layout_area.addWidget(self._barra_acoes())
@@ -770,6 +811,15 @@ class MainWindow(QtWidgets.QMainWindow):
         form_qualidade.addRow(rotulo_com_ajuda("Dados válidos mínimos", "Mantém somente patches com pelo menos este percentual de pixels válidos."), self.dados_validos_min_pct)
         form_qualidade.addRow(rotulo_com_ajuda("RGB dataset mínimo", "Limite inferior para converter valores científicos em RGB."), self.dataset_rgb_minimo)
         form_qualidade.addRow(rotulo_com_ajuda("RGB dataset máximo", "Limite superior para converter valores científicos em RGB."), self.dataset_rgb_maximo)
+        form_qualidade.addRow("Modelo agrícola", self.modelo_ia)
+        form_qualidade.addRow("SHA-256 do modelo", self.modelo_sha256)
+        form_qualidade.addRow(rotulo_com_ajuda("Confiança mínima", "Detecções abaixo deste limiar não entram nos resultados."), self.confianca_minima)
+        form_qualidade.addRow(rotulo_com_ajuda("IoU máximo", "Controla a supressão de caixas sobrepostas pelo modelo."), self.iou_maximo)
+        form_qualidade.addRow("Tamanho da inferência", self.tamanho_inferencia_px)
+        form_qualidade.addRow("Pasta das análises", self.pasta_analises)
+        form_qualidade.addRow("Histórico local", self.historico_analises)
+        form_qualidade.addRow(self.gerar_relatorio)
+        form_qualidade.addRow(rotulo_com_ajuda("Imagens por análise", "Zero processa todos os patches aprovados do período."), self.max_imagens_analise)
         qualidade.layout_principal.addLayout(form_qualidade)
         qualidade.layout_principal.addStretch()
         layout.addWidget(qualidade, 1)
@@ -848,6 +898,49 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(perfis, 1)
         return pagina
 
+    def _pagina_analise(self) -> QtWidgets.QWidget:
+        pagina = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(pagina)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(14)
+
+        resumo = Cartao(
+            "Análise da região",
+            "As contagens vêm de caixas detectadas; caixas não equivalem à área real dos talhões.",
+        )
+        resumo.layout_principal.addWidget(self.analise_info)
+        resumo.layout_principal.addWidget(self.analise_tabela)
+        layout.addWidget(resumo, 1)
+
+        imagens = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        original = Cartao("Imagem RGB original")
+        original.layout_principal.addWidget(self.analise_original, 1)
+        analisada = Cartao("Imagem com detecções")
+        analisada.layout_principal.addWidget(self.analise_anotada, 1)
+        imagens.addWidget(original)
+        imagens.addWidget(analisada)
+        layout.addWidget(imagens, 2)
+        self.btn_relatorio = botao("Abrir relatório PDF", "primaryButton")
+        self.btn_relatorio.setEnabled(False)
+        self.btn_relatorio.clicked.connect(self._abrir_relatorio_analise)
+        layout.addWidget(self.btn_relatorio, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        return pagina
+
+    def _pagina_historico(self) -> QtWidgets.QWidget:
+        pagina = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(pagina)
+        layout.setContentsMargins(0, 0, 0, 0)
+        cartao = Cartao(
+            "Histórico local",
+            "O banco guarda somente metadados e caminhos; GeoTIFFs permanecem fora do SQLite.",
+        )
+        cartao.layout_principal.addWidget(self.historico_tabela, 1)
+        atualizar = botao("Atualizar histórico")
+        atualizar.clicked.connect(self._recarregar_historico)
+        cartao.layout_principal.addWidget(atualizar)
+        layout.addWidget(cartao)
+        return pagina
+
     def _barra_acoes(self) -> QtWidgets.QWidget:
         barra = QtWidgets.QWidget()
         layout = QtWidgets.QHBoxLayout(barra)
@@ -874,6 +967,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_salvar.clicked.connect(self._salvar_configuracao)
         self.btn_executar.clicked.connect(self._executar)
         self.btn_cancelar.clicked.connect(self._cancelar)
+        self.historico_tabela.doubleClicked.connect(self._abrir_relatorio_historico)
 
     def _navegar(self, indice: int) -> None:
         self.stack.setCurrentIndex(indice)
@@ -882,6 +976,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if indice == 1:
             QtCore.QTimer.singleShot(0, self.mapa.reativar)
             QtCore.QTimer.singleShot(200, self.mapa.reativar)
+        elif indice == 5:
+            self._recarregar_historico()
 
     def _atualizar_operacao(self) -> None:
         operacao = self.operacao.currentData()
@@ -889,6 +985,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "catalogar": "Consulta o INPE e atualiza o catálogo CSV sem baixar GeoTIFFs.",
             "baixar": "Filtra nuvens, baixa as bandas aprovadas e gera previews RGB.",
             "dataset": "Reutiliza GeoTIFFs locais e gera patches científicos e RGB PNG.",
+            "analisar": "Baixa e processa cenas, executa o detector agrícola e gera resultados locais.",
             "sincronizar": "Envia as imagens locais ao Google Drive em lotes configuráveis.",
         }
         self.resumo_operacao.setText(mensagens[str(operacao)])
@@ -929,6 +1026,16 @@ class MainWindow(QtWidgets.QMainWindow):
             "dataset_rgb_metodo": "fixed",
             "dataset_rgb_minimo": self.dataset_rgb_minimo.value(),
             "dataset_rgb_maximo": self.dataset_rgb_maximo.value(),
+            "modelo_ia": self.modelo_ia.text().strip() or "analise/models/agricultura.pt",
+            "modelo_sha256": self.modelo_sha256.text().strip().lower(),
+            "confianca_minima": self.confianca_minima.value() / 100.0,
+            "iou_maximo": self.iou_maximo.value() / 100.0,
+            "tamanho_inferencia_px": self.tamanho_inferencia_px.value(),
+            "pasta_analises": self.pasta_analises.text().strip() or "data/analises",
+            "historico_analises": self.historico_analises.text().strip()
+            or "data/historico-analises.sqlite3",
+            "gerar_relatorio": self.gerar_relatorio.isChecked(),
+            "max_imagens_analise": self.max_imagens_analise.value(),
             "timeout_segundos": self.timeout_segundos.value(),
             "chunk_mb": self.chunk_mb.value(),
             "max_itens_teste": self.max_itens_teste.value(),
@@ -989,6 +1096,9 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         self.log.clear()
+        self._saida_pendente = ""
+        self._resultado_pendente = None
+        self._operacao_em_execucao = str(self.operacao.currentData())
         programa, argumentos_processo, diretorio = comando_cli_empacotado(argumentos)
         self.log.appendPlainText(
             f"$ {shlex.join([programa, *argumentos_processo])}\n"
@@ -1005,11 +1115,182 @@ class MainWindow(QtWidgets.QMainWindow):
             cursor.insertText(texto)
             self.log.setTextCursor(cursor)
             self.log.ensureCursorVisible()
+            self._saida_pendente += texto
+            while "\n" in self._saida_pendente:
+                linha, self._saida_pendente = self._saida_pendente.split("\n", 1)
+                self._processar_linha_resultado(linha)
 
     def _processo_finalizado(self, codigo: int, _status) -> None:
+        if self._saida_pendente:
+            self._processar_linha_resultado(self._saida_pendente)
+            self._saida_pendente = ""
+        if codigo == 0 and self._resultado_pendente is not None:
+            try:
+                self._carregar_resultado_analise(self._resultado_pendente)
+            except (OSError, TypeError, ValueError, json.JSONDecodeError) as erro:
+                self.log.appendPlainText(f"\n[ERRO] Resultado da análise inválido: {erro}")
+            finally:
+                self._resultado_pendente = None
         mensagem = "Concluído" if codigo == 0 else f"Encerrado com código {codigo}"
         self.log.appendPlainText(f"\n[{mensagem}]")
         self._definir_execucao(False, mensagem)
+
+    def _processar_linha_resultado(self, linha: str) -> None:
+        marcador = "[ANALISE_RESULTADO] "
+        if self._operacao_em_execucao != "analisar" or not linha.startswith(marcador):
+            return
+        caminho = Path(linha[len(marcador):].strip()).expanduser()
+        if caminho.is_absolute() or ".." in caminho.parts or caminho.suffix.lower() != ".json":
+            return
+        self._resultado_pendente = ROOT / caminho
+
+    def _carregar_resultado_analise(self, caminho: Path) -> None:
+        _, raiz_analises = self._raizes_artefatos()
+        caminho = self._resolver_em_raiz(caminho, raiz_analises, {".json"})
+        if caminho.stat().st_size > 10 * 1024 * 1024:
+            raise ValueError("resultado.json excede o limite de 10 MB")
+        dados = json.loads(caminho.read_text(encoding="utf-8"))
+        if not isinstance(dados, dict) or "estatisticas" not in dados:
+            raise ValueError("estrutura JSON inesperada")
+        self._ultimo_resultado = dados
+        estatisticas = dados["estatisticas"]
+        periodo = f"{dados.get('periodo_inicio', '—')} a {dados.get('periodo_fim', '—')}"
+        self.analise_info.setText(
+            f"Região: {dados.get('regiao', '—')}\nPeríodo: {periodo}\n"
+            f"Cenas: {', '.join(dados.get('scene_ids', [])) or '—'}\n"
+            f"Dispositivo de processamento: {dados.get('dispositivo', '—')}\n"
+            f"Detecções: {estatisticas.get('total_deteccoes', 0)}"
+        )
+        por_classe = estatisticas.get("por_classe", {})
+        self.analise_tabela.setRowCount(len(por_classe))
+        for linha, classe in enumerate(sorted(por_classe)):
+            valores = (
+                classe,
+                str(por_classe[classe]),
+                self._percentual_confianca(estatisticas.get("confianca_media_por_classe", {}).get(classe)),
+                self._percentual_confianca(estatisticas.get("confianca_minima_por_classe", {}).get(classe)),
+                self._percentual_confianca(estatisticas.get("confianca_maxima_por_classe", {}).get(classe)),
+            )
+            for coluna, valor in enumerate(valores):
+                self.analise_tabela.setItem(linha, coluna, QtWidgets.QTableWidgetItem(valor))
+        raiz_dataset, raiz_analises = self._raizes_artefatos()
+        self._exibir_imagem_resultado(
+            self.analise_original, dados.get("imagem_original", ""), raiz_dataset
+        )
+        self._exibir_imagem_resultado(
+            self.analise_anotada, dados.get("imagem_analisada", ""), raiz_analises
+        )
+        relatorio = self._resolver_em_raiz_opcional(
+            dados.get("caminho_relatorio", ""), raiz_analises, {".pdf"}
+        )
+        self.btn_relatorio.setEnabled(bool(relatorio and relatorio.is_file()))
+        self._navegar(4)
+        self._recarregar_historico()
+
+    @staticmethod
+    def _percentual_confianca(valor: object) -> str:
+        return "—" if valor is None else f"{float(valor) * 100:.1f}%"
+
+    def _raizes_artefatos(self) -> tuple[Path, Path]:
+        config_path = Path(self.output_path.text().strip() or DEFAULT_CONFIG)
+        config = ConfiguracaoProjeto.carregar(config_path, raiz=ROOT)
+        return (
+            config.caminho(config.dataset.pasta).resolve(),
+            config.caminho(config.analise.pasta).resolve(),
+        )
+
+    @staticmethod
+    def _resolver_em_raiz(valor: object, raiz: Path, sufixos: set[str]) -> Path:
+        caminho = Path(str(valor)).expanduser()
+        caminho = caminho if caminho.is_absolute() else ROOT / caminho
+        if caminho.is_symlink():
+            raise ValueError("Links simbólicos não são aceitos para artefatos")
+        resolvido = caminho.resolve()
+        try:
+            resolvido.relative_to(raiz.resolve())
+        except ValueError as exc:
+            raise ValueError("Artefato fora da raiz permitida") from exc
+        if resolvido.is_symlink() or not resolvido.is_file() or resolvido.suffix.lower() not in sufixos:
+            raise ValueError("Artefato ausente ou inválido")
+        return resolvido
+
+    def _resolver_em_raiz_opcional(
+        self, valor: object, raiz: Path, sufixos: set[str]
+    ) -> Path | None:
+        if not valor:
+            return None
+        try:
+            return self._resolver_em_raiz(valor, raiz, sufixos)
+        except ValueError:
+            return None
+
+    def _exibir_imagem_resultado(
+        self, rotulo: QtWidgets.QLabel, valor: object, raiz: Path
+    ) -> None:
+        caminho = self._resolver_em_raiz_opcional(
+            valor, raiz, {".png", ".jpg", ".jpeg"}
+        )
+        imagem = QtGui.QPixmap(str(caminho)) if caminho else QtGui.QPixmap()
+        if imagem.isNull():
+            rotulo.setText("Imagem indisponível")
+            rotulo.setPixmap(QtGui.QPixmap())
+            return
+        rotulo.setPixmap(
+            imagem.scaled(
+                560, 360, QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                QtCore.Qt.TransformationMode.SmoothTransformation,
+            )
+        )
+
+    def _abrir_relatorio_analise(self) -> None:
+        if not self._ultimo_resultado:
+            return
+        _, raiz_analises = self._raizes_artefatos()
+        caminho = self._resolver_em_raiz_opcional(
+            self._ultimo_resultado.get("caminho_relatorio", ""), raiz_analises, {".pdf"}
+        )
+        if caminho and caminho.is_file():
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(str(caminho)))
+
+    def _recarregar_historico(self) -> None:
+        self.historico_tabela.setRowCount(0)
+        try:
+            config_path = Path(self.output_path.text().strip() or DEFAULT_CONFIG)
+            if not config_path.is_file():
+                return
+            config = ConfiguracaoProjeto.carregar(config_path, raiz=ROOT)
+            banco = config.caminho(config.analise.historico)
+            if not banco.is_file():
+                return
+            registros = RepositorioHistoricoAnalises(banco, ROOT).listar(limite=200)
+        except (OSError, TypeError, ValueError):
+            return
+        self.historico_tabela.setRowCount(len(registros))
+        for linha, registro in enumerate(registros):
+            resumo = registro.resumo if isinstance(registro.resumo, dict) else {}
+            valores = (
+                registro.criado_em,
+                registro.regiao,
+                f"{registro.periodo_inicio} a {registro.periodo_fim}",
+                str(resumo.get("total_deteccoes", 0)),
+                registro.report_path or "—",
+            )
+            for coluna, valor in enumerate(valores):
+                item = QtWidgets.QTableWidgetItem(valor)
+                if coluna == 4:
+                    item.setData(QtCore.Qt.ItemDataRole.UserRole, registro.report_path)
+                self.historico_tabela.setItem(linha, coluna, item)
+
+    def _abrir_relatorio_historico(self, indice: QtCore.QModelIndex) -> None:
+        item = self.historico_tabela.item(indice.row(), 4)
+        _, raiz_analises = self._raizes_artefatos()
+        caminho = self._resolver_em_raiz_opcional(
+            item.data(QtCore.Qt.ItemDataRole.UserRole) if item else "",
+            raiz_analises,
+            {".pdf"},
+        )
+        if caminho and caminho.is_file():
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(str(caminho)))
 
     def _erro_processo(self, erro) -> None:
         if erro == QtCore.QProcess.ProcessError.FailedToStart:

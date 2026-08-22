@@ -131,3 +131,25 @@ class TestPackaging(TestCase):
 
         self.assertNotIn("PySide6", exclusoes)
         self.assertIn("PyQt6", exclusoes)
+
+    def test_build_arch_respeita_extensao_configurada_pelo_makepkg(self) -> None:
+        conteudo = (ROOT / "packaging/build_arch_package.sh").read_text(encoding="utf-8")
+        self.assertIn("makepkg --packagelist", conteudo)
+        self.assertNotIn('*.pkg.tar.zst', conteudo)
+
+    def test_runtime_ia_e_modelo_entram_no_bundle(self) -> None:
+        requisitos = (ROOT / "requirements.txt").read_text(encoding="utf-8")
+        spec = (ROOT / "packaging/sentinel2-mt.spec").read_text(encoding="utf-8")
+        self.assertIn("ultralytics", requisitos)
+        self.assertIn("matplotlib", requisitos)
+        self.assertIn('"torch"', spec)
+        self.assertIn('"ultralytics"', spec)
+        self.assertIn("sentinel2_mt/analise/models", spec)
+
+    def test_configs_de_desenvolvimento_e_pacote_expoem_analise(self) -> None:
+        desenvolvimento = yaml.safe_load((ROOT / "config/config.yaml").read_text(encoding="utf-8"))
+        pacote = yaml.safe_load((ROOT / "packaging/config.yaml").read_text(encoding="utf-8"))
+        self.assertEqual(set(desenvolvimento["analise"]), set(pacote["analise"]))
+        self.assertEqual(
+            desenvolvimento["analise"]["modelo"], pacote["analise"]["modelo"]
+        )

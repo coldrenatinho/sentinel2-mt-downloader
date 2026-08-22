@@ -32,7 +32,7 @@ except ModuleNotFoundError as exc:
 
 class SentinelTUI(App):
     TITLE = "Sentinel-2 MT Downloader"
-    SUB_TITLE = "Catálogo, download e Google Drive"
+    SUB_TITLE = "Catálogo, download, análise por IA e Google Drive"
 
     CSS = """
     Screen {
@@ -105,6 +105,7 @@ class SentinelTUI(App):
                         ("Catalogar sem baixar", "catalogar"),
                         ("Baixar imagens", "baixar"),
                         ("Gerar dataset local", "dataset"),
+                        ("Analisar região com IA", "analisar"),
                         ("Sincronizar com Google Drive", "sincronizar"),
                     ],
                     value="catalogar",
@@ -157,8 +158,9 @@ class SentinelTUI(App):
             self.query_one(campo, Input).disabled = sincronizacao
         for campo in ("#oauth_json", "#lote"):
             self.query_one(campo, Input).disabled = not sincronizacao
-        self.query_one("#patch_size", Select).disabled = operacao != "dataset"
-        self.query_one("#patch_stride", Input).disabled = operacao != "dataset"
+        usa_patches = operacao in {"dataset", "analisar"}
+        self.query_one("#patch_size", Select).disabled = not usa_patches
+        self.query_one("#patch_stride", Input).disabled = not usa_patches
 
     def montar_comando(self) -> list[str]:
         operacao = str(self.query_one("#operacao", Select).value)
@@ -169,13 +171,13 @@ class SentinelTUI(App):
         comando = [sys.executable, "--cli", "--config", str(config)] if EMPACOTADO else [sys.executable, "-u", str(SCRIPT), "--config", str(config)]
         if operacao == "baixar":
             comando.append("--baixar")
-        elif operacao == "dataset":
+        elif operacao in {"dataset", "analisar"}:
             stride = self.query_one("#patch_stride", Input).value.strip()
             if not stride or int(stride) <= 0:
                 raise ValueError("O stride dos patches deve ser maior que zero.")
             comando.extend(
                 [
-                    "--gerar-dataset",
+                    "--analisar" if operacao == "analisar" else "--gerar-dataset",
                     "--patch-size",
                     str(self.query_one("#patch_size", Select).value),
                     "--patch-stride",

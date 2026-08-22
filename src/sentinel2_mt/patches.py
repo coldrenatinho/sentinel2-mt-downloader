@@ -10,7 +10,6 @@ from typing import Callable
 
 import numpy as np
 from PIL import Image
-import uuid
 import rasterio
 from rasterio.enums import Resampling
 from rasterio.transform import array_bounds
@@ -334,7 +333,7 @@ class GeradorDataset:
                     self.config.rgb,
                 )
 
-                rgb_gerado = f"{uuid.uuid4().hex}.PNG"
+                rgb_gerado = "rgb.png"
                 Image.fromarray(rgb, mode="RGB").save(
                     pasta_temporaria / rgb_gerado,
                     "PNG",

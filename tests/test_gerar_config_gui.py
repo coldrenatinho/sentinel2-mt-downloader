@@ -48,6 +48,8 @@ class TestGerarConfigGui(unittest.TestCase):
         self.assertEqual(config["sincronizacao"]["pasta_id"], "${GOOGLE_PASTA_ID:-root}")
         self.assertEqual(config["sincronizacao"]["extensoes"], [".tif", ".tiff", ".jpg", ".jpeg"])
         self.assertEqual(config["dataset"]["patches"]["max_patches_por_cena"], 100000)
+        self.assertEqual(config["analise"]["modelo"], "analise/models/agricultura.pt")
+        self.assertEqual(config["analise"]["confianca_minima"], 0.25)
 
     def test_salvar_config_cria_arquivo(self):
         dados = {"bbox": [-1, -2, 3, 4]}
@@ -150,6 +152,36 @@ class TestGerarConfigGui(unittest.TestCase):
                 "256",
                 "--patch-stride",
                 "128",
+            ],
+        )
+
+    def test_monta_argumentos_para_analise(self):
+        argumentos = montar_argumentos_operacao(
+            "analisar",
+            "config/config.yaml",
+            inicio="2026-01-01",
+            fim="2026-03-31",
+            max_itens=2,
+            patch_size=512,
+            patch_stride=512,
+        )
+
+        self.assertEqual(
+            argumentos,
+            [
+                "--config",
+                "config/config.yaml",
+                "--analisar",
+                "--inicio",
+                "2026-01-01",
+                "--fim",
+                "2026-03-31",
+                "--max-itens",
+                "2",
+                "--patch-size",
+                "512",
+                "--patch-stride",
+                "512",
             ],
         )
 

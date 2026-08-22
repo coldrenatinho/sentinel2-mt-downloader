@@ -8,11 +8,12 @@ from pathlib import Path
 from . import __version__
 from .configuracao import ConfiguracaoProjeto
 from .google_drive import SincronizadorGoogleDrive
+from .analise.servico import OpcoesAnalise, ServicoAnaliseAgricola
 from .servico import OpcoesColeta, ServicoSentinel2
 
 
 EMPACOTADO = bool(getattr(sys, "frozen", False))
-ROOT = Path.cwd() if EMPACOTADO else Path(__file__).resolve().parents[2]
+ROOT = Path.home() if EMPACOTADO else Path(__file__).resolve().parents[2]
 CONFIG_SISTEMA = Path("/etc/sentinel2-mt/config.yaml")
 
 
@@ -45,6 +46,11 @@ class AplicacaoCLI:
         parser.add_argument("--patch-size", type=int, choices=(256, 512), help="Tamanho do patch em pixels.")
         parser.add_argument("--patch-stride", type=int, help="Passo entre patches em pixels.")
         parser.add_argument("--sincronizar", action="store_true", help="Sincroniza imagens com a API do Google Drive.")
+        parser.add_argument(
+            "--analisar",
+            action="store_true",
+            help="Baixa/processa as cenas e executa a análise agrícola local.",
+        )
         parser.add_argument("--oauth-json", type=Path, help="Arquivo JSON OAuth; sobrescreve a configuração.")
         parser.add_argument("--lote", type=int, help="Sobrescreve o tamanho do lote de sincronização.")
         return parser
@@ -53,8 +59,28 @@ class AplicacaoCLI:
         args = self.criar_parser().parse_args(argv)
         try:
             config = ConfiguracaoProjeto.carregar(args.config, raiz=ROOT)
+            if args.sincronizar and args.analisar:
+                raise ValueError("--sincronizar e --analisar não podem ser usados juntos")
             if args.sincronizar:
                 SincronizadorGoogleDrive(config).sincronizar(oauth_path=args.oauth_json, tamanho_lote=args.lote)
+                return 0
+
+            if args.analisar:
+                resultado = ServicoAnaliseAgricola(config).executar(
+                    OpcoesAnalise(
+                        inicio=args.inicio,
+                        fim=args.fim,
+                        max_itens=args.max_itens,
+                        patch_size=args.patch_size,
+                        patch_stride=args.patch_stride,
+                    )
+                )
+                caminho = Path(resultado.caminho_resultado)
+                try:
+                    caminho = caminho.relative_to(config.raiz)
+                except ValueError:
+                    caminho = Path(caminho.name)
+                print(f"[ANALISE_RESULTADO] {caminho.as_posix()}")
                 return 0
 
             opcoes = OpcoesColeta(

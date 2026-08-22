@@ -53,6 +53,7 @@ sentinel2-mt                  # GUI principal
 sentinel2-mt --gui            # GUI explícita
 sentinel2-mt --tui            # interface de terminal
 sentinel2-mt --cli --help     # automação por linha de comando
+sentinel2-mt --cli --analisar # coleta, patches e análise agrícola local
 ```
 
 O atalho desktop não abre uma janela de terminal. Para usar a TUI, abra um
@@ -61,6 +62,22 @@ terminal e execute `sentinel2-mt --tui`.
 Os pacotes instalam um lançador de compatibilidade que prioriza a `libstdc++`
 do sistema e desativa a aceleração do QtWebEngine. Isso evita conflitos entre
 as bibliotecas incluídas pelo PyInstaller e drivers gráficos mais recentes.
+
+## Runtime e modelo de análise
+
+O bundle coleta Ultralytics, Torch e Matplotlib para inferência e relatórios. A
+spec inclui `sentinel2_mt/analise/models` quando o diretório existe, mas o peso
+`agricultura.pt` não está no repositório atual: portanto, os artefatos gerados a
+partir deste estado não têm inferência real pronta para uso. Para distribuir um
+modelo aprovado, ele deve estar em
+`src/sentinel2_mt/analise/models/agricultura.pt` antes do build; mantenha ao lado
+o `model_metadata.json` correspondente com o SHA-256 obrigatório. O build falha
+se o peso presente não coincidir com o manifesto.
+
+Esse caminho é de desenvolvimento/build e não deve ser confundido com um
+diretório gravável instalado. Em execução empacotada, o modelo é lido do bundle
+construído. Consulte [../docs/modelo-ia.md](../docs/modelo-ia.md) para o contrato
+do arquivo e as limitações atuais.
 
 ## Build local
 

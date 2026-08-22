@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass, field
+from datetime import date
+import math
 from pathlib import Path
 from typing import Any
 
@@ -105,6 +107,19 @@ class ConfiguracaoSincronizacao:
 
 
 @dataclass(frozen=True)
+class ConfiguracaoAnalise:
+    modelo: str = "analise/models/agricultura.pt"
+    modelo_sha256: str = ""
+    confianca_minima: float = 0.25
+    iou_maximo: float = 0.45
+    tamanho_inferencia_px: int = 640
+    pasta: str = "data/analises"
+    historico: str = "data/historico-analises.sqlite3"
+    gerar_relatorio: bool = True
+    max_imagens: int = 1000
+
+
+@dataclass(frozen=True)
 class ConfiguracaoProjeto:
     raiz: Path
     stac: ConfiguracaoStac
@@ -116,6 +131,7 @@ class ConfiguracaoProjeto:
     download: ConfiguracaoDownload
     sincronizacao: ConfiguracaoSincronizacao
     dataset: ConfiguracaoDataset = field(default_factory=ConfiguracaoDataset)
+    analise: ConfiguracaoAnalise = field(default_factory=ConfiguracaoAnalise)
 
     @classmethod
     def carregar(cls, caminho: Path, raiz: Path | None = None) -> "ConfiguracaoProjeto":
@@ -151,12 +167,16 @@ class ConfiguracaoProjeto:
         patches_dados = dict(dataset_dados.pop("patches", {}))
         download = dados.get("download", {})
         sincronizacao = dados.get("sincronizacao", {})
+        analise = dict(dados.get("analise", {}))
         oauth_json = sincronizacao.get("oauth_json") or cls._descobrir_oauth(raiz_projeto)
         config = cls(
             raiz=raiz_projeto,
             stac=ConfiguracaoStac(**dados["stac"]),
             area=ConfiguracaoArea(nome=area["nome"], uf=area["uf"], bbox=bbox),
-            periodo=ConfiguracaoPeriodo(**dados["periodo"]),
+            periodo=ConfiguracaoPeriodo(
+                inicio=str(dados["periodo"]["inicio"]),
+                fim=str(dados["periodo"]["fim"]),
+            ),
             bandas=tuple(str(banda).upper() for banda in dados["bandas"]),
             qualidade=ConfiguracaoQualidade(**qualidade),
             preview=ConfiguracaoPreview(**preview),
@@ -174,6 +194,7 @@ class ConfiguracaoProjeto:
                 patches=ConfiguracaoPatches(**patches_dados),
                 **dataset_dados,
             ),
+            analise=ConfiguracaoAnalise(**analise),
         )
         config.validar()
         return config
@@ -231,6 +252,20 @@ class ConfiguracaoProjeto:
             raise ValueError("stac.url e stac.colecao são obrigatórios")
         if not self.bandas:
             raise ValueError("Ao menos uma banda deve ser configurada")
+        oeste, sul, leste, norte = self.area.bbox
+        if not all(math.isfinite(valor) for valor in self.area.bbox):
+            raise ValueError("area.bbox deve conter coordenadas finitas")
+        if not (-180 <= oeste < leste <= 180 and -90 <= sul < norte <= 90):
+            raise ValueError(
+                "area.bbox deve respeitar limites geográficos e oeste < leste, sul < norte"
+            )
+        try:
+            inicio = date.fromisoformat(self.periodo.inicio)
+            fim = date.fromisoformat(self.periodo.fim)
+        except ValueError as exc:
+            raise ValueError("periodo deve usar datas válidas no formato AAAA-MM-DD") from exc
+        if inicio > fim:
+            raise ValueError("periodo.inicio não pode ser posterior a periodo.fim")
         if self.download.timeout_segundos <= 0 or self.download.chunk_mb <= 0:
             raise ValueError("Timeout e tamanho do chunk devem ser positivos")
         if not 0 <= self.qualidade.nuvem_max_pct <= 100:
@@ -264,6 +299,21 @@ class ConfiguracaoProjeto:
         self._validar_rgb(rgb.metodo, rgb.minimo, rgb.maximo, rgb.percentil_min, rgb.percentil_max, "dataset.rgb")
         if self.sincronizacao.tamanho_lote <= 0:
             raise ValueError("sincronizacao.tamanho_lote deve ser maior que zero")
+        if not 0 <= self.analise.confianca_minima <= 1:
+            raise ValueError("analise.confianca_minima deve estar entre 0 e 1")
+        if not 0 <= self.analise.iou_maximo <= 1:
+            raise ValueError("analise.iou_maximo deve estar entre 0 e 1")
+        if self.analise.tamanho_inferencia_px <= 0:
+            raise ValueError("analise.tamanho_inferencia_px deve ser positivo")
+        if self.analise.tamanho_inferencia_px > 2048:
+            raise ValueError("analise.tamanho_inferencia_px não pode exceder 2048")
+        if self.analise.max_imagens < 0:
+            raise ValueError("analise.max_imagens não pode ser negativo")
+        if self.analise.max_imagens > 10_000:
+            raise ValueError("analise.max_imagens não pode exceder 10000")
+        sha256 = self.analise.modelo_sha256.strip().lower()
+        if sha256 and not re.fullmatch(r"[0-9a-f]{64}", sha256):
+            raise ValueError("analise.modelo_sha256 deve ser um SHA-256 hexadecimal")
 
     @staticmethod
     def _validar_rgb(

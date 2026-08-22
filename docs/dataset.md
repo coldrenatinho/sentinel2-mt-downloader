@@ -285,6 +285,22 @@ essas ausências são registradas sem abortar os demais assets.
 A sincronização Google Drive atual percorre apenas `download.pasta`; o dataset,
 seus PNG/JSON e `patches.csv` não são enviados automaticamente.
 
+## Relação com a análise agrícola
+
+`--analisar` primeiro executa a coleta com geração de dataset e depois seleciona
+no `patches.csv` somente registros aprovados, dentro do período, que tenham
+`rgb_png` local. O detector recebe o `rgb.png` B04/B03/B02 em 8 bits; o
+`multiband.tif` continua sendo o patch científico e não é alterado. Para cada
+entrada, a análise cria um PNG de overlay separado.
+
+As estatísticas agregam caixas, classes, confianças, presença de detecção por
+tile, nuvens disponíveis e hashes de modelo/entradas. Elas não calculam área.
+A bbox da configuração delimita a consulta, mas caixas em pixels não podem ser
+convertidas em hectares sem escala, resolução espacial e geometria
+georreferenciada validadas para esse fim. Consulte [modelo-ia.md](modelo-ia.md)
+para o contrato do detector e [arquitetura-aplicacao.md](arquitetura-aplicacao.md)
+para o fluxo da aplicação.
+
 ## Limitações
 
 Sentinel-2 não resolve linhas de plantio, plantas individuais nem feições

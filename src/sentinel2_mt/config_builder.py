@@ -91,6 +91,19 @@ class GeradorConfiguracao:
                 "max_itens_teste": int(dados.get("max_itens_teste", 5)),
                 "max_candidatos_teste": int(dados.get("max_candidatos_teste", 40)),
             },
+            "analise": {
+                "modelo": dados.get("modelo_ia", "analise/models/agricultura.pt"),
+                "modelo_sha256": dados.get("modelo_sha256", ""),
+                "confianca_minima": float(dados.get("confianca_minima", 0.25)),
+                "iou_maximo": float(dados.get("iou_maximo", 0.45)),
+                "tamanho_inferencia_px": int(dados.get("tamanho_inferencia_px", 640)),
+                "pasta": dados.get("pasta_analises", "data/analises"),
+                "historico": dados.get(
+                    "historico_analises", "data/historico-analises.sqlite3"
+                ),
+                "gerar_relatorio": bool(dados.get("gerar_relatorio", True)),
+                "max_imagens": int(dados.get("max_imagens_analise", 1000)),
+            },
             "sincronizacao": {
                 "pasta_remota": dados.get("pasta_remota", "sentinel2-mt"),
                 "oauth_json": dados.get("oauth_json", "${GOOGLE_OAUTH_JSON:-}"),
