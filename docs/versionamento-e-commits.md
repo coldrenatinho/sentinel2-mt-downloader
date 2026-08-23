@@ -105,6 +105,10 @@ em branches e Pull Requests separados.
 8. Envie a tag e acompanhe o workflow **Pacotes Linux**.
 9. Confira os arquivos, checksums e notas da GitHub Release.
 
+Se o pacote Arch exceder 2 GB, ele continua disponível no artifact do
+workflow, mas não entra no GitHub Release; a nota publicada aponta esse fato
+explicitamente.
+
 Comandos da etapa de publicação:
 
 ```bash

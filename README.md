@@ -47,6 +47,11 @@ núcleo de serviços para uso avançado e automação.
 O endpoint STAC e a coleção podem ser alterados em `config/config.yaml` ou pela
 GUI; os demais itens descrevem o produto usado como padrão pelo projeto.
 
+## Recursos relacionados
+
+- **Downloader Sentinel-2 MT:** [https://github.com/coldrenatinho/sentinel2-mt-downloader](https://github.com/coldrenatinho/sentinel2-mt-downloader)
+- **Modelo YOLO treinado no Hugging Face:** [https://huggingface.co/renatoas/sentinel2-mt-yolo](https://huggingface.co/renatoas/sentinel2-mt-yolo)
+
 ## Início rápido
 
 ### Requisitos
@@ -453,6 +458,8 @@ executa os testes, gera um binário autocontido com PyInstaller e produz:
 Os pacotes incluem a GUI PySide6 e a iniciam quando o executável é chamado sem
 argumentos. As interfaces alternativas permanecem disponíveis com
 `sentinel2-mt --tui` e `sentinel2-mt --cli ...`.
+Quando um asset ultrapassa o limite de 2 GB do GitHub Releases, o workflow o
+mantém apenas no artifact de execução e publica os demais arquivos.
 
 Para publicar uma versão, atualize `__version__` em
 `src/sentinel2_mt/__init__.py`, crie uma tag com a mesma versão e envie-a:

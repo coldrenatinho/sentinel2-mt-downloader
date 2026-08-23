@@ -9,6 +9,9 @@ permanecem incluídas no mesmo executável. O workflow produz os formatos:
 - Arch Linux: `.pkg.tar.zst` e `PKGBUILD`;
 - binário Linux x86_64 e `SHA256SUMS`.
 
+Se algum asset ultrapassar o limite de 2 GB do GitHub Releases, o workflow o
+mantém apenas no artifact da execução e publica os demais arquivos.
+
 ## Publicação
 
 O código declara a versão em `src/sentinel2_mt/__init__.py`. A tag deve usar a

@@ -133,12 +133,51 @@ jobs:
         if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
+          shopt -s nullglob
+          assets=()
+          skipped_assets=()
+          for asset in release/*; do
+            [[ -f "$asset" ]] || continue
+            if [[ "$(stat -c '%s' "$asset")" -ge 2147483648 ]]; then
+              echo "Ignorando asset acima do limite do GitHub Releases: $asset" >&2
+              skipped_assets+=("$asset:$(stat -c '%s' "$asset")")
+              continue
+            fi
+            assets+=("$asset")
+          done
+          if (( ${#assets[@]} == 0 )); then
+            echo "Nenhum asset elegível para publicação." >&2
+            exit 1
+          fi
+          release_note_file=""
+          if (( ${#skipped_assets[@]} > 0 )); then
+            release_note_file="$(mktemp)"
+            {
+              printf 'Observação de empacotamento:\n'
+              printf 'O(s) arquivo(s) abaixo excederam o limite de 2 GB do GitHub Releases e ficaram apenas como artifact do workflow:\n'
+              for asset in "${skipped_assets[@]}"; do
+                nome="${asset%%:*}"
+                tamanho="${asset##*:}"
+                printf -- '- %s (%s bytes)\n' "$(basename "$nome")" "$tamanho"
+              done
+              printf '\n'
+            } >"$release_note_file"
+          fi
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" release/* --clobber
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
           else
-            gh release create "$GITHUB_REF_NAME" release/* \
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
               --verify-tag \
               --title "Sentinel-2 MT ${{ steps.version.outputs.version }}" \
               --generate-notes
+          fi
+          if [[ -n "$release_note_file" ]]; then
+            existing_notes="$(gh release view "$GITHUB_REF_NAME" --json body -q .body)"
+            {
+              cat "$release_note_file"
+              printf '%s\n' "$existing_notes"
+            } >"${release_note_file}.combined"
+            gh release edit "$GITHUB_REF_NAME" --notes-file "${release_note_file}.combined"
           fi

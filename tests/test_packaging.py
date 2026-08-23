@@ -42,6 +42,12 @@ class TestPackaging(TestCase):
         workflow = (ROOT / ".github/workflows/packages.yml").read_text(encoding="utf-8")
         self.assertIn("./release/sentinel2-mt-wrapper.sh --version", workflow)
         self.assertIn("./release/sentinel2-mt-wrapper.sh --help", workflow)
+        self.assertIn("stat -c '%s'", workflow)
+        self.assertIn("2147483648", workflow)
+        self.assertIn("Ignorando asset acima do limite do GitHub Releases", workflow)
+        self.assertIn("Observação de empacotamento", workflow)
+        self.assertIn("ficaram apenas como artifact do workflow", workflow)
+        self.assertIn("printf -- '- %s (%s bytes)\\n'", workflow)
 
     def test_atalho_desktop_abre_gui_sem_terminal(self) -> None:
         desktop = (ROOT / "packaging/sentinel2-mt.desktop").read_text(encoding="utf-8")
