@@ -23,7 +23,7 @@ dataset:
   pasta: data/dataset
   catalogo: catalogo/patches.csv
 analise:
-  modelo: analise/models/agricultura.pt
+  modelo: analise/models/best.pt
   modelo_sha256: ''
   pasta: data/analises
   historico: data/historico.sqlite3
@@ -46,7 +46,7 @@ class DetectorFake:
             altura=32,
             deteccoes=(Deteccao("soja", 0.8, (1, 2, 10, 12), 0),),
             modelo=MetadadosModelo(
-                nome="agricultura.pt", sha256=self.sha256_modelo,
+                nome="best.pt", sha256=self.sha256_modelo,
                 versao="0.1.0", dispositivo="cpu", classes={0: "soja"},
             ),
             versao="teste",

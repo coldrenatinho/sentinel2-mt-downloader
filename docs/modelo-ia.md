@@ -2,16 +2,17 @@
 
 ## Estado atual
 
-A aplicação possui o adaptador e o pipeline de detecção Ultralytics YOLO, mas
-não distribui o peso real. O arquivo obrigatório está ausente:
+A aplicação possui o adaptador e o pipeline de detecção Ultralytics YOLO, e o
+peso aprovado agora acompanha a árvore de desenvolvimento:
 
 ```text
-src/sentinel2_mt/analise/models/agricultura.pt
+src/sentinel2_mt/analise/models/best.pt
 ```
 
-Os testes exercitam validação, inferência, estatísticas, overlay, PDF e histórico
-com pesos, imagens e detectores sintéticos. Eles não validam a acurácia nem uma
-inferência agrícola real. Treinamento não faz parte do produto documentado.
+Os testes continuam exercitando validação, inferência, estatísticas, overlay,
+PDF e histórico com pesos, imagens e detectores sintéticos. Eles não validam a
+acurácia do modelo nem substituem uma campanha formal de validação em campo.
+Treinamento não faz parte do produto documentado.
 
 ## Requisitos de execução
 
@@ -21,8 +22,8 @@ inferência agrícola real. Treinamento não faz parte do produto documentado.
 - Pillow processa a entrada RGB e grava os overlays.
 
 Essas dependências são instaladas pelos requisitos do projeto; o bundle Linux
-as coleta durante o build. O peso continua sendo responsabilidade de quem
-prepara a execução ou o pacote.
+as coleta durante o build. O peso é empacotado junto com o software, então a
+execução padrão já encontra o arquivo.
 
 Com `dispositivo="auto"`, usado pelo serviço, o detector escolhe `cuda:0` quando
 `torch.cuda.is_available()` é verdadeiro e usa `cpu` nos demais ambientes. A
@@ -31,17 +32,17 @@ chave YAML pública para forçar o dispositivo nesta versão.
 
 ## Instalação e substituição do peso
 
-Para desenvolvimento pelo código-fonte, coloque o peso aprovado exatamente em:
+Para desenvolvimento pelo código-fonte, mantenha o peso aprovado exatamente em:
 
 ```text
-src/sentinel2_mt/analise/models/agricultura.pt
+src/sentinel2_mt/analise/models/best.pt
 ```
 
 O valor YAML continua relativo:
 
 ```yaml
 analise:
-  modelo: analise/models/agricultura.pt
+  modelo: analise/models/best.pt
 ```
 
 O resolvedor aceita somente arquivo local regular com extensão `.pt`, contido
@@ -66,7 +67,7 @@ execução se qualquer valor divergir.
 Calcule o hash sem copiar o conteúdo do modelo:
 
 ```bash
-sha256sum src/sentinel2_mt/analise/models/agricultura.pt
+sha256sum src/sentinel2_mt/analise/models/best.pt
 ```
 
 Copie somente a primeira coluna para o YAML:
@@ -78,18 +79,18 @@ analise:
 
 O arquivo adjacente
 `src/sentinel2_mt/analise/models/model_metadata.json` descreve o modelo. O
-metadata atual declara nome, versão, framework, tarefa, entrada RGB
-B04/B03/B02 `uint8` e tamanho 640. O serviço usa `version` como versão pública
-do modelo e registra essa versão, o SHA-256 calculado, as classes expostas pelo
-peso e o dispositivo. Metadata ausente resulta em versão `não informada`;
-JSON inválido interrompe a análise.
+metadata atual declara nome, versão, framework, tarefa, entrada RGB B04/B03/B02
+`uint8` e tamanho 640. O serviço usa `version` como versão pública do modelo e
+registra essa versão, o SHA-256 calculado, as classes expostas pelo peso e o
+dispositivo. Metadata ausente resulta em versão `não informada`; JSON inválido
+interrompe a análise.
 
 Ao instalar um peso aprovado, preencha também o manifesto:
 
 ```json
 {
   "name": "Sentinel MT Agriculture Detector",
-  "version": "0.1.0",
+  "version": "2.1.0-beta.1",
   "sha256": "HASH_SHA256_DE_64_DIGITOS",
   "framework": "Ultralytics YOLO",
   "task": "detection",
@@ -101,7 +102,7 @@ Ao instalar um peso aprovado, preencha também o manifesto:
 
 ```yaml
 analise:
-  modelo: analise/models/agricultura.pt
+  modelo: analise/models/best.pt
   modelo_sha256: ''
   confianca_minima: 0.25
   iou_maximo: 0.45
@@ -151,5 +152,16 @@ convertida nem apresentada como hectares.
 
 O resultado depende do peso fornecido, das classes nele codificadas, do stretch
 RGB, da resolução espacial efetiva, da composição temporal, de nuvens, sombras,
-fenologia e mistura de pixels. Reamostrar ou aumentar dimensões não cria detalhe
-espacial novo.
+fenologia e mistura de pixels. Reamostrar ou aumentar dimensões não cria
+detalhe espacial novo.
+
+## Evidências do treinamento
+
+Os seguintes artefatos do treino acompanham esta documentação para registrar o
+comportamento observado do peso `best.pt`:
+
+![Matriz de confusão](modelo-ia/confusion_matrix.png)
+
+![Curva de resultados](modelo-ia/results.png)
+
+![Distribuição de rótulos](modelo-ia/labels.jpg)

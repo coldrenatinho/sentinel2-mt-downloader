@@ -6,10 +6,11 @@ VERSION="${1:?Uso: build_arch_package.sh VERSION}"
 OUT="$ROOT/release"
 WORK="/tmp/sentinel2-mt-arch-package"
 
-if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Versão inválida: use o formato X.Y.Z" >&2
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+  echo "Versão inválida: use o formato X.Y.Z ou X.Y.Z-sufixo" >&2
   exit 2
 fi
+PKG_VERSION="${VERSION//-/.}"
 
 rm -rf "$WORK"
 mkdir -p "$WORK"
@@ -17,7 +18,10 @@ install -m755 "$OUT/sentinel2-mt-linux-x86_64" "$WORK/sentinel2-mt"
 install -m644 "$OUT/sentinel2-mt-config.yaml" "$WORK/config.yaml"
 install -m644 "$OUT/sentinel2-mt.desktop" "$WORK/sentinel2-mt.desktop"
 install -m755 "$OUT/sentinel2-mt-wrapper.sh" "$WORK/sentinel2-mt-wrapper.sh"
-sed "s/@VERSION@/$VERSION/g" "$ROOT/packaging/arch/PKGBUILD.ci" >"$WORK/PKGBUILD"
+sed \
+  -e "s/@VERSION@/$VERSION/g" \
+  -e "s/@PKGVER@/$PKG_VERSION/g" \
+  "$ROOT/packaging/arch/PKGBUILD.ci" >"$WORK/PKGBUILD"
 
 useradd --create-home builder
 chown -R builder:builder "$WORK"

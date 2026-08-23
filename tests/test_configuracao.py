@@ -38,7 +38,7 @@ class TestConfiguracaoProjeto(TestCase):
             self.assertEqual(config.preview.metodo, "percentile")
             self.assertEqual(config.dataset.patches.tamanho_px, 512)
             self.assertEqual(config.dataset.patches.max_patches_por_cena, 100_000)
-            self.assertEqual(config.analise.modelo, "analise/models/agricultura.pt")
+            self.assertEqual(config.analise.modelo, "analise/models/best.pt")
             self.assertEqual(config.analise.tamanho_inferencia_px, 640)
             self.assertEqual(config.analise.max_imagens, 1000)
             self.assertEqual(config.caminho(config.download.pasta), raiz / "data/imagens")
@@ -126,7 +126,7 @@ dataset:
                 CONFIG_MINIMA
                 + """
 analise:
-  modelo: analise/models/agricultura.pt
+  modelo: analise/models/best.pt
   modelo_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   confianca_minima: 0.4
   iou_maximo: 0.5

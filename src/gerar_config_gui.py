@@ -533,7 +533,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dataset_rgb_minimo = self._inteiro(-10000, 10000, 0)
         self.dataset_rgb_maximo = self._inteiro(-10000, 30000, 2000)
 
-        self.modelo_ia = QtWidgets.QLineEdit("analise/models/agricultura.pt")
+        self.modelo_ia = QtWidgets.QLineEdit("analise/models/best.pt")
         self.modelo_sha256 = QtWidgets.QLineEdit()
         self.modelo_sha256.setPlaceholderText("Opcional: SHA-256 do modelo aprovado")
         self.confianca_minima = self._inteiro(0, 100, 25, "%")
@@ -1026,7 +1026,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "dataset_rgb_metodo": "fixed",
             "dataset_rgb_minimo": self.dataset_rgb_minimo.value(),
             "dataset_rgb_maximo": self.dataset_rgb_maximo.value(),
-            "modelo_ia": self.modelo_ia.text().strip() or "analise/models/agricultura.pt",
+            "modelo_ia": self.modelo_ia.text().strip() or "analise/models/best.pt",
             "modelo_sha256": self.modelo_sha256.text().strip().lower(),
             "confianca_minima": self.confianca_minima.value() / 100.0,
             "iou_maximo": self.iou_maximo.value() / 100.0,

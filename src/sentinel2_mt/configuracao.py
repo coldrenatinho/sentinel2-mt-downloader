@@ -108,7 +108,7 @@ class ConfiguracaoSincronizacao:
 
 @dataclass(frozen=True)
 class ConfiguracaoAnalise:
-    modelo: str = "analise/models/agricultura.pt"
+    modelo: str = "analise/models/best.pt"
     modelo_sha256: str = ""
     confianca_minima: float = 0.25
     iou_maximo: float = 0.45

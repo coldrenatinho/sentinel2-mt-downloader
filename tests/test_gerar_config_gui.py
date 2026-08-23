@@ -48,7 +48,7 @@ class TestGerarConfigGui(unittest.TestCase):
         self.assertEqual(config["sincronizacao"]["pasta_id"], "${GOOGLE_PASTA_ID:-root}")
         self.assertEqual(config["sincronizacao"]["extensoes"], [".tif", ".tiff", ".jpg", ".jpeg"])
         self.assertEqual(config["dataset"]["patches"]["max_patches_por_cena"], 100000)
-        self.assertEqual(config["analise"]["modelo"], "analise/models/agricultura.pt")
+        self.assertEqual(config["analise"]["modelo"], "analise/models/best.pt")
         self.assertEqual(config["analise"]["confianca_minima"], 0.25)
 
     def test_salvar_config_cria_arquivo(self):

@@ -28,12 +28,12 @@ def resultado(
         altura=256,
         deteccoes=deteccoes,
         modelo=MetadadosModelo(
-            nome="agricola.pt",
+            nome="best.pt",
             sha256=HASH_MODELO,
             versao="2026.1",
             dispositivo="cpu",
         ),
-        versao="2.0.0",
+        versao="2.1.0-beta.1",
         tipo_entrada=tipo,
         nuvens_pct=nuvens,
     )
@@ -72,7 +72,7 @@ class TestEstatisticasAnalise(TestCase):
         self.assertEqual(resumo.nuvens_maxima_pct, 30.0)
         self.assertEqual(resumo.hashes_modelos, (HASH_MODELO,))
         self.assertEqual(resumo.hashes_entradas, ("a" * 64, "b" * 64, "c" * 64, "d" * 64))
-        self.assertEqual(resumo.versoes, ("2.0.0",))
+        self.assertEqual(resumo.versoes, ("2.1.0-beta.1",))
 
     def test_vazio_nao_divide_por_zero_e_nao_inventa_confianca_ou_nuvens(self) -> None:
         resumo = calcular_estatisticas([])

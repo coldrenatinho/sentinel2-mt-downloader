@@ -15,8 +15,8 @@ O código declara a versão em `src/sentinel2_mt/__init__.py`. A tag deve usar a
 mesma versão com o prefixo `v`:
 
 ```bash
-git tag -a v2.0.0 -m "release: v2.0.0"
-git push origin v2.0.0
+git tag -a v2.1.0-beta.1 -m "release: v2.1.0-beta.1"
+git push origin v2.1.0-beta.1
 ```
 
 O push da tag inicia o workflow e publica ou atualiza a GitHub Release. Uma
@@ -27,17 +27,17 @@ para teste, mas não cria uma Release.
 
 ```bash
 # Debian/Ubuntu
-sudo apt install ./sentinel2-mt-downloader_2.0.0_amd64.deb
+sudo apt install ./sentinel2-mt-downloader_2.1.0-beta.1_amd64.deb
 
 # Fedora/RHEL
-sudo dnf install ./sentinel2-mt-downloader-2.0.0-1.x86_64.rpm
+sudo dnf install ./sentinel2-mt-downloader-2.1.0.beta.1-1.x86_64.rpm
 
 # Arch Linux
-sudo pacman -U ./sentinel2-mt-downloader-bin-2.0.0-1-x86_64.pkg.tar.zst
+sudo pacman -U ./sentinel2-mt-downloader-bin-2.1.0.beta.1-1-x86_64.pkg.tar.zst
 ```
 
 Em builds locais, a extensão depende de `PKGEXT` na configuração do Arch.
-Alguns ambientes geram `sentinel2-mt-downloader-bin-2.0.0-1-x86_64.pkg.tar`
+Alguns ambientes geram `sentinel2-mt-downloader-bin-2.1.0.beta.1-1-x86_64.pkg.tar`
 em vez de `.pkg.tar.zst`; esse arquivo também é um pacote válido e pode ser
 instalado diretamente com `sudo pacman -U caminho/do/pacote.pkg.tar`.
 
@@ -66,13 +66,11 @@ as bibliotecas incluídas pelo PyInstaller e drivers gráficos mais recentes.
 ## Runtime e modelo de análise
 
 O bundle coleta Ultralytics, Torch e Matplotlib para inferência e relatórios. A
-spec inclui `sentinel2_mt/analise/models` quando o diretório existe, mas o peso
-`agricultura.pt` não está no repositório atual: portanto, os artefatos gerados a
-partir deste estado não têm inferência real pronta para uso. Para distribuir um
-modelo aprovado, ele deve estar em
-`src/sentinel2_mt/analise/models/agricultura.pt` antes do build; mantenha ao lado
-o `model_metadata.json` correspondente com o SHA-256 obrigatório. O build falha
-se o peso presente não coincidir com o manifesto.
+spec inclui `sentinel2_mt/analise/models` quando o diretório existe, e o peso
+`best.pt` acompanha esta árvore de desenvolvimento. Para distribuir um modelo
+aprovado, mantenha-o em `src/sentinel2_mt/analise/models/best.pt` antes do
+build; mantenha ao lado o `model_metadata.json` correspondente com o SHA-256
+obrigatório. O build falha se o peso presente não coincidir com o manifesto.
 
 Esse caminho é de desenvolvimento/build e não deve ser confundido com um
 diretório gravável instalado. Em execução empacotada, o modelo é lido do bundle
@@ -87,7 +85,7 @@ Instale as dependências da GUI e do build antes de gerar
 ```bash
 python -m pip install -r requirements-gui.txt -r requirements-build.txt
 python -m PyInstaller --noconfirm --clean packaging/sentinel2-mt.spec
-packaging/build_linux_packages.sh 2.0.0
+packaging/build_linux_packages.sh 2.1.0-beta.1
 ```
 
 São necessários `dpkg-deb` e `rpmbuild`. O pacote Arch é construído no workflow

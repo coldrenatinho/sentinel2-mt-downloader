@@ -184,9 +184,9 @@ Baixar/processar as cenas, gerar patches e executar a análise agrícola local:
 `--analisar` usa os mesmos parâmetros de período, limite de cenas e patches da
 coleta. Ele não pode ser combinado com `--sincronizar`. Antes de executar,
 forneça um peso Ultralytics YOLO compatível exatamente em
-`src/sentinel2_mt/analise/models/agricultura.pt` na árvore de desenvolvimento.
-Esse arquivo `.pt` não está incluído no repositório; por isso, a inferência real
-não foi validada neste estado do código.
+`src/sentinel2_mt/analise/models/best.pt` na árvore de desenvolvimento. O peso
+aprovado já acompanha esta árvore e é empacotado junto com o software; a
+inferência local passa a usar esse arquivo por padrão.
 
 Exibir todas as opções:
 
@@ -214,7 +214,7 @@ A seção de análise e seus defaults no ambiente de desenvolvimento são:
 
 ```yaml
 analise:
-  modelo: analise/models/agricultura.pt
+  modelo: analise/models/best.pt
   modelo_sha256: ''
   confianca_minima: 0.25
   iou_maximo: 0.45
@@ -458,8 +458,8 @@ Para publicar uma versão, atualize `__version__` em
 `src/sentinel2_mt/__init__.py`, crie uma tag com a mesma versão e envie-a:
 
 ```bash
-git tag -a v2.0.0 -m "release: v2.0.0"
-git push origin v2.0.0
+git tag -a v2.1.0-beta.1 -m "release: v2.1.0-beta.1"
+git push origin v2.1.0-beta.1
 ```
 
 Uma execução manual do workflow gera artefatos para validação sem publicar uma

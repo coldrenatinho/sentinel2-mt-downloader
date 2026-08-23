@@ -1,5 +1,5 @@
 pkgname=sentinel2-mt-downloader-bin
-pkgver=@VERSION@
+pkgver=@PKGVER@
 pkgrel=1
 pkgdesc="Interface gráfica para download e sincronização de imagens Sentinel-2 de Mato Grosso"
 arch=('x86_64')
@@ -9,10 +9,10 @@ depends=('glibc' 'libgl' 'libxkbcommon-x11' 'nss' 'alsa-lib' 'dbus' 'fontconfig'
 provides=('sentinel2-mt-downloader')
 conflicts=('sentinel2-mt-downloader')
 source=(
-  "sentinel2-mt-${pkgver}::https://github.com/coldrenatinho/sentinel2-mt-downloader/releases/download/v${pkgver}/sentinel2-mt-linux-x86_64"
-  "config-${pkgver}.yaml::https://github.com/coldrenatinho/sentinel2-mt-downloader/releases/download/v${pkgver}/sentinel2-mt-config.yaml"
-  "sentinel2-mt.desktop::https://github.com/coldrenatinho/sentinel2-mt-downloader/releases/download/v${pkgver}/sentinel2-mt.desktop"
-  "sentinel2-mt-wrapper.sh::https://github.com/coldrenatinho/sentinel2-mt-downloader/releases/download/v${pkgver}/sentinel2-mt-wrapper.sh"
+  "sentinel2-mt-@VERSION@::https://github.com/coldrenatinho/sentinel2-mt-downloader/releases/download/v@VERSION@/sentinel2-mt-linux-x86_64"
+  "config-@VERSION@.yaml::https://github.com/coldrenatinho/sentinel2-mt-downloader/releases/download/v@VERSION@/sentinel2-mt-config.yaml"
+  "sentinel2-mt.desktop::https://github.com/coldrenatinho/sentinel2-mt-downloader/releases/download/v@VERSION@/sentinel2-mt.desktop"
+  "sentinel2-mt-wrapper.sh::https://github.com/coldrenatinho/sentinel2-mt-downloader/releases/download/v@VERSION@/sentinel2-mt-wrapper.sh"
 )
 sha256sums=('@BINARY_SHA256@' '@CONFIG_SHA256@' '@DESKTOP_SHA256@' '@WRAPPER_SHA256@')
 

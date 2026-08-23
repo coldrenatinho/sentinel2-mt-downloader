@@ -23,9 +23,10 @@ os sufixos SemVer:
 - `v1.1.0-beta.1`: funcionalidade completa, ainda em testes;
 - `v1.1.0-rc.1`: candidata à versão estável.
 
-O workflow de pacotes atual aceita apenas releases estáveis no formato
-`vX.Y.Z`. Antes de publicar uma pré-release, a validação e os formatos de versão
-dos pacotes DEB, RPM e Arch precisam ser adaptados em conjunto.
+O workflow de pacotes aceita releases estáveis e pré-releases no formato
+`vX.Y.Z`, `vX.Y.Z-beta.1`, `vX.Y.Z-rc.1` e variantes equivalentes. O processo
+de empacotamento normaliza internamente o formato quando necessário para DEB,
+RPM e Arch.
 
 Não reutilize nem mova uma tag já publicada. Quando uma release precisar de
 correção, publique uma nova versão `PATCH`.
@@ -108,8 +109,8 @@ Comandos da etapa de publicação:
 
 ```bash
 QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -v
-git tag -a vX.Y.Z -m "release: vX.Y.Z"
-git push origin vX.Y.Z
+git tag -a vX.Y.Z-beta.1 -m "release: vX.Y.Z-beta.1"
+git push origin vX.Y.Z-beta.1
 ```
 
 O workflow recusa uma tag quando a versão declarada no código não corresponde

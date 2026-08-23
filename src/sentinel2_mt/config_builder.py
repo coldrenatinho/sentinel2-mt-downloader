@@ -92,7 +92,7 @@ class GeradorConfiguracao:
                 "max_candidatos_teste": int(dados.get("max_candidatos_teste", 40)),
             },
             "analise": {
-                "modelo": dados.get("modelo_ia", "analise/models/agricultura.pt"),
+                "modelo": dados.get("modelo_ia", "analise/models/best.pt"),
                 "modelo_sha256": dados.get("modelo_sha256", ""),
                 "confianca_minima": float(dados.get("confianca_minima", 0.25)),
                 "iou_maximo": float(dados.get("iou_maximo", 0.45)),

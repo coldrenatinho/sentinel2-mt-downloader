@@ -1,5 +1,5 @@
 pkgname=sentinel2-mt-downloader-bin
-pkgver=@VERSION@
+pkgver=@PKGVER@
 pkgrel=1
 pkgdesc="Interface gráfica para download e sincronização de imagens Sentinel-2 de Mato Grosso"
 arch=('x86_64')

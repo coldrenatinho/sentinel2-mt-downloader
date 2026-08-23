@@ -206,7 +206,7 @@ class ServicoAnaliseAgricola:
         if self.detector_factory is DetectorAgricola:
             if not re.fullmatch(r"[0-9a-f]{64}", hash_manifesto):
                 raise ValueError(
-                    "model_metadata.json deve conter o SHA-256 aprovado do agricultura.pt"
+                    "model_metadata.json deve conter o SHA-256 aprovado do best.pt"
                 )
             if (
                 self.config.analise.modelo_sha256

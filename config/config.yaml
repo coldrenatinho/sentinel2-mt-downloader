@@ -69,7 +69,7 @@ download:
   max_itens_teste: 5
   max_candidatos_teste: 40
 analise:
-  modelo: analise/models/agricultura.pt
+  modelo: analise/models/best.pt
   modelo_sha256: ''
   confianca_minima: 0.25
   iou_maximo: 0.45

@@ -45,11 +45,11 @@ permite que a GUI abra o JSON e mostre contagens por classe, confianças, imagem
 original, overlay e dispositivo usado.
 
 O peso esperado na execução pelo código-fonte é
-`src/sentinel2_mt/analise/models/agricultura.pt`. O arquivo não acompanha o
-repositório atual. Sem ele, a operação informa que o modelo é inexistente e não
-executa inferência. Ultralytics e Torch são necessários para o detector;
-Matplotlib é necessário quando o relatório PDF está habilitado. Consulte
-[docs/modelo-ia.md](docs/modelo-ia.md) antes de substituir o peso.
+`src/sentinel2_mt/analise/models/best.pt`. O arquivo acompanha esta árvore e é
+incluído nos pacotes do aplicativo. Sem ele, a operação informa que o modelo é
+inexistente e não executa inferência. Ultralytics e Torch são necessários para
+o detector; Matplotlib é necessário quando o relatório PDF está habilitado.
+Consulte [docs/modelo-ia.md](docs/modelo-ia.md) antes de substituir o peso.
 
 O histórico guarda metadados e caminhos, não os GeoTIFFs. As caixas e contagens
 da tela não representam área agrícola: uma bbox seleciona a região de consulta,

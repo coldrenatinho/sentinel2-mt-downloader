@@ -27,7 +27,7 @@ for pacote in (
 modelos = ROOT / "src/sentinel2_mt/analise/models"
 if modelos.is_dir():
     metadata_modelo = modelos / "model_metadata.json"
-    modelo = modelos / "agricultura.pt"
+    modelo = modelos / "best.pt"
     if metadata_modelo.is_file():
         datas.append((str(metadata_modelo), "sentinel2_mt/analise/models"))
     if modelo.is_file():
@@ -35,7 +35,7 @@ if modelos.is_dir():
         esperado = str(metadata.get("sha256", "")).lower()
         calculado = hashlib.sha256(modelo.read_bytes()).hexdigest()
         if esperado != calculado:
-            raise ValueError("SHA-256 de agricultura.pt diverge de model_metadata.json")
+            raise ValueError("SHA-256 de best.pt diverge de model_metadata.json")
         datas.append((str(modelo), "sentinel2_mt/analise/models"))
 
 analise = Analysis(

@@ -109,7 +109,8 @@ talhões nem uma conversão validada das caixas para área. Contagens ou áreas 
 pixels não devem ser apresentadas como hectares.
 
 O pipeline e seus adaptadores foram testados com fakes e pesos sintéticos. O
-peso real `agricultura.pt` está ausente, portanto este estado do repositório não
-comprova inferência agrícola real. Treinamento de modelos não integra o produto.
-Quando o peso for fornecido, seu SHA-256 aprovado deve constar no
-`model_metadata.json`; a aplicação carrega um snapshot privado validado.
+peso real `best.pt` agora acompanha a árvore de desenvolvimento, portanto este
+estado do repositório inclui um motor agrícola funcional. Treinamento de
+modelos não integra o produto. Quando o peso for substituído, seu SHA-256
+aprovado deve constar no `model_metadata.json`; a aplicação carrega um snapshot
+privado validado.

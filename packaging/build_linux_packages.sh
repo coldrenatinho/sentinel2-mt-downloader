@@ -6,10 +6,11 @@ VERSION="${1:?Uso: build_linux_packages.sh VERSION [BINARIO] [SAIDA]}"
 BINARY="${2:-$ROOT/dist/sentinel2-mt}"
 OUT="${3:-$ROOT/release}"
 
-if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Versão inválida: use o formato X.Y.Z" >&2
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+  echo "Versão inválida: use o formato X.Y.Z ou X.Y.Z-sufixo" >&2
   exit 2
 fi
+PKG_VERSION="${VERSION//-/.}"
 if [[ ! -x "$BINARY" ]]; then
   echo "Binário não encontrado ou não executável: $BINARY" >&2
   exit 2
@@ -50,7 +51,7 @@ install -m755 "$ROOT/packaging/sentinel2-mt-wrapper.sh" "$RPMROOT/SOURCES/sentin
 install -m644 "$ROOT/packaging/config.yaml" "$RPMROOT/SOURCES/config.yaml"
 install -m644 "$ROOT/packaging/sentinel2-mt.desktop" "$RPMROOT/SOURCES/sentinel2-mt.desktop"
 cp "$ROOT/packaging/rpm/sentinel2-mt.spec" "$RPMROOT/SPECS/"
-rpmbuild --define "_topdir $RPMROOT" --define "package_version $VERSION" -bb "$RPMROOT/SPECS/sentinel2-mt.spec"
+rpmbuild --define "_topdir $RPMROOT" --define "package_version $PKG_VERSION" -bb "$RPMROOT/SPECS/sentinel2-mt.spec"
 cp "$RPMROOT/RPMS/x86_64/"*.rpm "$OUT/"
 
 install -m755 "$BINARY" "$OUT/sentinel2-mt-linux-x86_64"
@@ -64,6 +65,7 @@ DESKTOP_SHA256="$(sha256sum "$OUT/sentinel2-mt.desktop" | cut -d' ' -f1)"
 WRAPPER_SHA256="$(sha256sum "$OUT/sentinel2-mt-wrapper.sh" | cut -d' ' -f1)"
 sed \
   -e "s/@VERSION@/$VERSION/g" \
+  -e "s/@PKGVER@/$PKG_VERSION/g" \
   -e "s/@BINARY_SHA256@/$BINARY_SHA256/g" \
   -e "s/@CONFIG_SHA256@/$CONFIG_SHA256/g" \
   -e "s/@DESKTOP_SHA256@/$DESKTOP_SHA256/g" \

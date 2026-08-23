@@ -97,7 +97,7 @@ class TestGuiQt(TestCase):
         payload = yaml.safe_load(destino.read_text(encoding="utf-8"))
         self.assertEqual(payload["area"]["nome"], "Norte de MT")
         self.assertEqual(payload["sincronizacao"]["tamanho_lote"], 100)
-        self.assertEqual(payload["analise"]["modelo"], "analise/models/agricultura.pt")
+        self.assertEqual(payload["analise"]["modelo"], "analise/models/best.pt")
         self.assertEqual(payload["analise"]["confianca_minima"], 0.25)
 
     def test_aplica_area_selecionada_no_mapa(self) -> None:
