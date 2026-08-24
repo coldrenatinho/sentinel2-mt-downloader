@@ -10,6 +10,10 @@ datas = []
 binaries = []
 hiddenimports = []
 
+fundo_gui = ROOT / "assets" / "mato-grosso-background.png"
+if fundo_gui.is_file():
+    datas.append((str(fundo_gui), "assets"))
+
 for pacote in (
     "rasterio",
     "textual",

@@ -133,7 +133,7 @@ simbólicos são rejeitados antes da inferência.
 
 ## Entrada, saída e limitações
 
-O detector recebe somente `rgb.png` dos patches aprovados no catálogo. O
+O detector recebe somente o PNG RGB identificado por UUID dos patches aprovados no catálogo. O
 GeoTIFF `multiband.tif` permanece como dado científico, sem alteração de dtype,
 nodata, máscara ou georreferenciamento. O detector retorna caixas `(x1, y1,
 x2, y2)` em pixels, classe, identificador da classe e confiança. A aplicação

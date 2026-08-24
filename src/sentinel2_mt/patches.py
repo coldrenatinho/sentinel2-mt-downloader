@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Callable
+import uuid
 
 import numpy as np
 from PIL import Image
@@ -333,7 +334,7 @@ class GeradorDataset:
                     self.config.rgb,
                 )
 
-                rgb_gerado = "rgb.png"
+                rgb_gerado = f"{self._uuid_rgb(registro)}.png"
                 Image.fromarray(rgb, mode="RGB").save(
                     pasta_temporaria / rgb_gerado,
                     "PNG",
@@ -433,6 +434,18 @@ class GeradorDataset:
                 pasta.rmdir()
             except OSError:
                 pass
+
+    @staticmethod
+    def _uuid_rgb(registro: RegistroPatch) -> str:
+        """Gera um nome UUID estável para o RGB do patch.
+
+        UUID5 evita colisões entre patches e mantém o nome reproduzível em
+        regenerações do mesmo patch.
+        """
+        chave = "|".join(
+            (registro.collection, registro.scene_id, registro.date, registro.patch_id)
+        )
+        return str(uuid.uuid5(uuid.NAMESPACE_URL, f"sentinel2-mt:rgb:{chave}"))
 
     def _limpar_produtos_obsoletos_cena(
         self,

@@ -257,7 +257,7 @@ bandas, resolução nativa, qualidade, alinhamento e catálogo de patches.
 
 Com os defaults e todos os assets disponíveis, uma cena aprovada é organizada
 por data e identificador como no exemplo abaixo. Assets ausentes são omitidos;
-os produtos do dataset dependem de suas flags e `rgb.png` exige B04/B03/B02.
+os produtos do dataset dependem de suas flags e o PNG identificado por UUID exige B04/B03/B02.
 
 ```text
 data/sentinel2/
@@ -287,7 +287,7 @@ data/dataset/
     └── ID_DA_CENA/
         └── ID_DA_CENA_HASH_x000000_y000000_512/
             ├── multiband.tif
-            ├── rgb.png
+            ├── <uuid>.png
             └── metadata.json
 
 catalogo/
@@ -304,11 +304,11 @@ data/historico-analises.sqlite3
 
 Os GeoTIFFs em `data/sentinel2` são a fonte científica e nunca são
 redimensionados ou convertidos para 8 bits. `multiband.tif` é o recorte
-georreferenciado para ML, `rgb.png` é uma representação RGB 8-bit do mesmo
+georreferenciado para ML, `<uuid>.png` é uma representação RGB 8-bit do mesmo
 patch e `preview_rgb.jpg` é apenas visualização reduzida. JPEG não é fonte do
 dataset de treinamento.
 
-O projeto gera RGB PNG por patch em vez de um `rgb_dataset.png` de cena inteira,
+O projeto gera RGB PNG por patch com nome UUID em vez de um `rgb_dataset.png` de cena inteira,
 evitando uma imagem enorme e redundante. Os PNGs mantêm a dimensão do patch;
 os valores científicos permanecem nos GeoTIFFs.
 

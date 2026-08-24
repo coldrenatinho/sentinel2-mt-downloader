@@ -101,7 +101,7 @@ QLabel#statusChip {
     background: %(status_fundo)s; color: %(status_texto)s; border: 1px solid %(borda)s;
     border-radius: 12px; padding: 6px 11px; font-weight: 700;
 }
-QFrame#card { background: %(superficie)s; border: 1px solid %(borda_suave)s; border-radius: 12px; }
+QFrame#card { background: rgba(255, 255, 255, 238); border: 1px solid %(borda_suave)s; border-radius: 12px; }
 QLabel#cardTitle { font-size: 16px; font-weight: 700; color: %(texto)s; }
 QLabel#cardHelp { color: %(texto_suave)s; font-size: 12px; }
 QLineEdit, QDateEdit, QSpinBox, QDoubleSpinBox, QComboBox,

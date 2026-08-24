@@ -4,6 +4,7 @@ import csv
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from uuid import UUID
 from unittest import TestCase
 
 import numpy as np
@@ -129,6 +130,8 @@ class TestGeradorDataset(TestCase):
 
             self.assertEqual(resumo.aprovados, 1)
             rgb_path = raiz / registro.rgb_png
+            UUID(rgb_path.stem)
+            self.assertNotEqual(rgb_path.name, "rgb.png")
             with Image.open(rgb_path) as imagem:
                 array = np.asarray(imagem)
                 self.assertEqual(imagem.format, "PNG")
@@ -338,7 +341,7 @@ class TestGeradorDataset(TestCase):
             self.assertEqual(resumo.descartados_nuvem, 1)
             self.assertEqual(rejeitados[0].status, "REJEITADO_NUVEM")
             self.assertFalse((pasta_patch / "multiband.tif").exists())
-            self.assertFalse((pasta_patch / "rgb.png").exists())
+            self.assertFalse(list(pasta_patch.glob("*.png")))
             self.assertFalse((pasta_patch / "metadata.json").exists())
 
     def test_ordem_dos_canais_segue_configuracao_e_nao_filesystem(self) -> None:
@@ -524,7 +527,8 @@ class TestGeradorDataset(TestCase):
             )
             pasta = (raiz / registros[0].geotiff_path).parent
             geotiff_antes = (pasta / "multiband.tif").read_bytes()
-            rgb_antes = (pasta / "rgb.png").read_bytes()
+            rgb_antes_path = next(pasta.glob("*.png"))
+            rgb_antes = rgb_antes_path.read_bytes()
 
             falhos, resumo = GeradorDataset(
                 config,
@@ -543,4 +547,4 @@ class TestGeradorDataset(TestCase):
             self.assertEqual(resumo.erros, 1)
             self.assertEqual(falhos[0].status, "ERRO")
             self.assertEqual((pasta / "multiband.tif").read_bytes(), geotiff_antes)
-            self.assertEqual((pasta / "rgb.png").read_bytes(), rgb_antes)
+            self.assertEqual(rgb_antes_path.read_bytes(), rgb_antes)

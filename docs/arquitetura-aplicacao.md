@@ -22,7 +22,7 @@ GUI (QProcess) ou TUI (subprocess)
                 +--> ServicoSentinel2
                 |      └--> cenas + patches RGB e multibanda
                 |
-                +--> DetectorAgricola sobre rgb.png
+                +--> DetectorAgricola sobre PNG RGB identificado por UUID
                 |      └--> caixas, classes, confianças e metadata
                 |
                 +--> estatísticas agregadas
@@ -73,7 +73,7 @@ A coleta preserva quatro papéis diferentes:
 
 - cena científica: raster original em `download.pasta`;
 - patch científico: `multiband.tif`, georreferenciado e com valores originais;
-- representação RGB: `rgb.png` B04/B03/B02 em 8 bits, entrada do detector;
+- representação RGB: PNG identificado por UUID, com B04/B03/B02 em 8 bits, entrada do detector;
 - preview: `preview_rgb.jpg`, destinado somente à inspeção da cena.
 
 O overlay `PATCH_ID-deteccoes.png` é outra representação visual. Ele é criado a

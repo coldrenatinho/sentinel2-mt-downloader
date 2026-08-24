@@ -99,7 +99,11 @@ instância antiga da GUI e abra novamente com `python iniciar_gui.py`.
 
 ## Dataset na GUI
 
-Em **Dados e qualidade**, a GUI expõe as bandas, o limite global da cena, a
+Em **Dados e qualidade**, a GUI expõe caixas de seleção para as bandas e índices
+B02, B03, B04, B05, B06, B07, B08, B8A, B11, B12, NDVI e EVI, com uma descrição
+de cada faixa. As coleções conhecidas também podem ser selecionadas por caixa;
+um ID de coleção personalizada continua disponível no campo de texto. A GUI
+expõe ainda o limite global da cena, a
 geração do dataset, tamanho/stride dos patches, limite de nuvem por patch,
 percentual mínimo de dados válidos e faixa fixa do RGB PNG. A GUI expõe essa
 faixa fixa; `dataset.rgb.metodo`, percentis, caminhos e toggles avançados
@@ -111,7 +115,7 @@ download. A operação **Baixar imagens aprovadas** também gera patches quando
 
 O visualizador da GUI pode abrir JPEG ou PNG, mas isso não altera a hierarquia
 de dados: os GeoTIFFs originais são a fonte científica, os GeoTIFFs multibanda
-são os recortes científicos, o `rgb.png` é a representação 8-bit usada pelo
+são os recortes científicos, o PNG identificado por UUID é a representação 8-bit usada pelo
 detector e o JPEG é somente preview. O overlay também é um PNG de visualização;
 ele não sobrescreve o patch RGB nem o GeoTIFF multibanda.
 
