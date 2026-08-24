@@ -18,8 +18,8 @@ O código declara a versão em `src/sentinel2_mt/__init__.py`. A tag deve usar a
 mesma versão com o prefixo `v`:
 
 ```bash
-git tag -a v2.1.0-beta.2 -m "release: v2.1.0-beta.2"
-git push origin v2.1.0-beta.2
+git tag -a v2.1.0-beta.3 -m "release: v2.1.0-beta.3"
+git push origin v2.1.0-beta.3
 ```
 
 O push da tag inicia o workflow e publica ou atualiza a GitHub Release. Uma
@@ -30,17 +30,17 @@ para teste, mas não cria uma Release.
 
 ```bash
 # Debian/Ubuntu
-sudo apt install ./sentinel2-mt-downloader_2.1.0-beta.2_amd64.deb
+sudo apt install ./sentinel2-mt-downloader_2.1.0-beta.3_amd64.deb
 
 # Fedora/RHEL
-sudo dnf install ./sentinel2-mt-downloader-2.1.0.beta.2-1.x86_64.rpm
+sudo dnf install ./sentinel2-mt-downloader-2.1.0.beta.3-1.x86_64.rpm
 
 # Arch Linux
-sudo pacman -U ./sentinel2-mt-downloader-bin-2.1.0.beta.2-1-x86_64.pkg.tar.zst
+sudo pacman -U ./sentinel2-mt-downloader-bin-2.1.0.beta.3-1-x86_64.pkg.tar.zst
 ```
 
 Em builds locais, a extensão depende de `PKGEXT` na configuração do Arch.
-Alguns ambientes geram `sentinel2-mt-downloader-bin-2.1.0.beta.2-1-x86_64.pkg.tar`
+Alguns ambientes geram `sentinel2-mt-downloader-bin-2.1.0.beta.3-1-x86_64.pkg.tar`
 em vez de `.pkg.tar.zst`; esse arquivo também é um pacote válido e pode ser
 instalado diretamente com `sudo pacman -U caminho/do/pacote.pkg.tar`.
 
@@ -88,7 +88,7 @@ Instale as dependências da GUI e do build antes de gerar
 ```bash
 python -m pip install -r requirements-gui.txt -r requirements-build.txt
 python -m PyInstaller --noconfirm --clean packaging/sentinel2-mt.spec
-packaging/build_linux_packages.sh 2.1.0-beta.2
+packaging/build_linux_packages.sh 2.1.0-beta.3
 ```
 
 São necessários `dpkg-deb` e `rpmbuild`. O pacote Arch é construído no workflow
